@@ -1,0 +1,1335 @@
+// © HomelessAlya
+// A product of Project Alya internet teknolojileri Tic.Ltd.Şti
+//@version=5
+indicator('Quantum Robot V2', overlay=true)
+
+//Gathers User Inputs
+voidLines = input(true, 'Void Lines On / Off')
+dashOn = input(true, 'Dashboard On / Off')
+colorBar = input(true, 'Signal Bars On / Off')
+srLines = input(false, 'Support & Resistance Lines On / Off')
+emaLines = input(false, 'EMA (8, 200) On / Off')
+bsSignals = input(true, 'Buy & Sell Signals On / Off')
+afibOn = input(false, 'Fibonacci Retracement On / Off')
+dashDist = input(13, 'Dashboard Distance')
+dashColor = input.color(color.new(#696969, 80), 'Dashboard Color', inline='Dash Line')
+dashTextColor = input.color(color.new(#ffffff, 0), 'Text Color', inline='Dash Line')
+
+//Dashboard için Volatiliteyi Hesaplar
+atr = ta.atr(14)
+stdAtr = 2 * ta.stdev(atr, 20)
+smaAtr = ta.sma(atr, 20)
+topAtrDev = smaAtr + stdAtr
+bottomAtrDev = smaAtr - stdAtr
+calcDev = (atr - bottomAtrDev) / (topAtrDev - bottomAtrDev)
+percentVol = 40 * calcDev + 30
+
+//Gösterge Tablosu için Hacmi Hesaplar
+volumeDash = volume
+
+//Pano için RSI
+rsiDash = ta.rsi(close, 14)
+
+//Gösterge Tablosu için Duyarlılığı Hesaplar
+ema9 = ta.ema(close, 9)
+totalSentTxt = ema9 > ema9[2] ? 'Bullish' : ema9 < ema9[2] ? 'Bearish' : 'Flat'
+
+//Trend Paneli için Her Zaman Çerçevesini Tanımlar
+sma = ta.sma(close, 50)
+oneM = request.security(syminfo.tickerid, '1', sma, barmerge.gaps_off, barmerge.lookahead_off)
+fiveM = request.security(syminfo.tickerid, '5', sma, barmerge.gaps_off, barmerge.lookahead_off)
+fifteenM = request.security(syminfo.tickerid, '15', sma, barmerge.gaps_off, barmerge.lookahead_off)
+thirtyM = request.security(syminfo.tickerid, '30', sma, barmerge.gaps_off, barmerge.lookahead_off)
+oneH = request.security(syminfo.tickerid, '60', sma, barmerge.gaps_off, barmerge.lookahead_off)
+twoH = request.security(syminfo.tickerid, '120', sma, barmerge.gaps_off, barmerge.lookahead_off)
+fourH = request.security(syminfo.tickerid, '240', sma, barmerge.gaps_off, barmerge.lookahead_off)
+weekly = request.security(syminfo.tickerid, 'W', sma, barmerge.gaps_off, barmerge.lookahead_off)
+monthly = request.security(syminfo.tickerid, 'M', sma, barmerge.gaps_off, barmerge.lookahead_off)
+daily = request.security(syminfo.tickerid, 'D', sma, barmerge.gaps_off, barmerge.lookahead_off)
+
+//Trend Paneli için Yükseliş Trendini Tanımlar
+oneMUp = oneM > oneM[1]
+fiveMUp = fiveM > fiveM[1]
+fifteenMUp = fifteenM > fifteenM[1]
+thirtyMUp = thirtyM > thirtyM[1]
+oneHUp = oneH > oneH[1]
+twoHUp = twoH > twoH[1]
+fourHUp = fourH > fourH[1]
+weeklyUp = weekly > weekly[1]
+monthlyUp = monthly > monthly[1]
+dailyUp = daily > daily[1]
+
+//Trend Paneli için Mevcut Durumun Yükseliş Eğilimi mi Düşüş Eğilimi mi olduğunu kontrol eder
+up = '📈'
+down = '📉'
+oneMTrend = oneMUp ? up : down
+fiveMTrend = fiveMUp ? up : down
+fifteenMTrend = fifteenMUp ? up : down
+thirtyMTrend = thirtyMUp ? up : down
+oneHTrend = oneHUp ? up : down
+twoHTrend = twoHUp ? up : down
+fourHTrend = fourHUp ? up : down
+weeklyTrend = weeklyUp ? up : down
+monthlyTrend = monthlyUp ? up : down
+dailyTrend = dailyUp ? up : down
+
+if dashOn
+    label lemonLabel = label.new(time, close, text='Quantum Panel' + '\n━━━━━━━━━━━━━━━━━' + '\n            Coin Bilgileri ' + '\n━━━━━━━━━━━━━━━━━' + '\n🎈   Volatility                     | ' + str.tostring(percentVol, '##.##') + '%' + '\n🎈 Volume                           | ' + str.tostring(volumeDash, '##.##') + '\n🎈 RSI                                           | ' + str.tostring(rsiDash, '##.##') + '\n🎈 Current Sentiment | ' + totalSentTxt + '\n━━━━━━━━━━━━━━━━━' + '\n                Trend Panel ' + '\n━━━━━━━━━━━━━━━━━' + '\n     1 Dakika | ' + oneMTrend + '         2 Saat | ' + twoHTrend + '\n     5 Dakika | ' + fiveMTrend + '         4 Saat | ' + fourHTrend + '\n        15 Dakika | ' + fifteenMTrend + '         Hafta | ' + weeklyTrend + '\n        30 Dakika | ' + thirtyMTrend + '       Ay |     ' + monthlyTrend + '\n        1 Saat | ' + oneHTrend + '                Daily | ' + dailyTrend + '\n━━━━━━━━━━━━━━━━━' + '\n                        Alyanet ', color=dashColor, xloc=xloc.bar_time, style=label.style_label_left, textcolor=dashTextColor, textalign=text.align_left)
+    label.set_x(lemonLabel, label.get_x(lemonLabel) + math.round(ta.change(time) * dashDist))
+    label.delete(lemonLabel[1])
+
+//Renk Gradyan Kodu
+//Bunu Yaptığı için @LunaOwl'a sesleniyorum!
+
+//Red                                 //Orange
+Red_1 = color.new(#FF0000, 0)
+Orange_1 = color.new(#FF9800, 0)
+Red_2 = color.new(#FF0000, 30)
+Orange_2 = color.new(#FF9800, 30)
+Red_3 = color.new(#FF0000, 50)
+Orange_3 = color.new(#FF9800, 50)
+Red_4 = color.new(#FF0000, 60)
+Orange_4 = color.new(#FF9800, 70)
+Red_5 = color.new(#FF0000, 80)
+Orange_5 = color.new(#FF9800, 80)
+
+//Yellow                              //Green
+Yellow_1 = color.new(#FFE500, 0)
+Green_1 = color.new(#00FF00, 0)
+Yellow_2 = color.new(#FFE500, 30)
+Green_2 = color.new(#00FF00, 30)
+Yellow_3 = color.new(#FFE500, 50)
+Green_3 = color.new(#00FF00, 50)
+Yellow_4 = color.new(#FFE500, 60)
+Green_4 = color.new(#00FF00, 70)
+Yellow_5 = color.new(#FFE500, 80)
+Green_5 = color.new(#00FF00, 80)
+
+//Blue                                //Indigo
+Blue_1 = color.new(#4985E7, 0)
+Indigo_1 = color.new(#7A2BCE, 0)
+Blue_2 = color.new(#4985E7, 30)
+Indigo_2 = color.new(#7A2BCE, 30)
+Blue_3 = color.new(#4985E7, 50)
+Indigo_3 = color.new(#7A2BCE, 50)
+Blue_4 = color.new(#4985E7, 60)
+Indigo_4 = color.new(#7A2BCE, 60)
+Blue_5 = color.new(#4985E7, 80)
+Indigo_5 = color.new(#7A2BCE, 80)
+
+//Purple
+Purple_1 = color.new(#D12FAD, 0)
+Purple_2 = color.new(#D12FAD, 30)
+Purple_3 = color.new(#D12FAD, 50)
+Purple_4 = color.new(#D12FAD, 60)
+Purple_5 = color.new(#D12FAD, 80)
+
+
+//Creates Color Variable       //Creates Math Variable
+var color c = na
+var int k = na
+
+k := nz(k[1], 1)  //This Equation Allows the Colors to Loop
+
+//This Code Loops Through 63 Shades of 7 Colors//
+
+if k == 1
+    c := Red_5
+    c
+if k == 2
+    c := Red_4
+    c
+if k == 3
+    c := Red_3
+    c
+if k == 4
+    c := Red_2
+    c
+if k == 5
+    c := Red_1
+    c
+if k == 6
+    c := Red_2
+    c
+if k == 7
+    c := Red_3
+    c
+if k == 8
+    c := Red_4
+    c
+if k == 9
+    c := Red_5
+    c
+if k == 10
+    c := Orange_5
+    c
+if k == 11
+    c := Orange_4
+    c
+if k == 12
+    c := Orange_3
+    c
+if k == 13
+    c := Orange_2
+    c
+if k == 14
+    c := Orange_1
+    c
+if k == 15
+    c := Orange_2
+    c
+if k == 16
+    c := Orange_3
+    c
+if k == 17
+    c := Orange_4
+    c
+if k == 18
+    c := Orange_5
+    c
+if k == 19
+    c := Yellow_5
+    c
+if k == 20
+    c := Yellow_4
+    c
+if k == 21
+    c := Yellow_3
+    c
+if k == 22
+    c := Yellow_2
+    c
+if k == 23
+    c := Yellow_1
+    c
+if k == 24
+    c := Yellow_2
+    c
+if k == 25
+    c := Yellow_3
+    c
+if k == 26
+    c := Yellow_4
+    c
+if k == 27
+    c := Yellow_5
+    c
+if k == 28
+    c := Green_5
+    c
+if k == 29
+    c := Green_4
+    c
+if k == 30
+    c := Green_3
+    c
+if k == 31
+    c := Green_2
+    c
+if k == 32
+    c := Green_1
+    c
+if k == 33
+    c := Green_2
+    c
+if k == 34
+    c := Green_3
+    c
+if k == 35
+    c := Green_4
+    c
+if k == 36
+    c := Green_5
+    c
+if k == 37
+    c := Blue_5
+    c
+if k == 38
+    c := Blue_4
+    c
+if k == 39
+    c := Blue_3
+    c
+if k == 40
+    c := Blue_2
+    c
+if k == 41
+    c := Blue_1
+    c
+if k == 42
+    c := Blue_2
+    c
+if k == 43
+    c := Blue_3
+    c
+if k == 44
+    c := Blue_4
+    c
+if k == 45
+    c := Blue_5
+    c
+if k == 46
+    c := Indigo_5
+    c
+if k == 47
+    c := Indigo_4
+    c
+if k == 48
+    c := Indigo_3
+    c
+if k == 49
+    c := Indigo_2
+    c
+if k == 50
+    c := Indigo_1
+    c
+if k == 51
+    c := Indigo_2
+    c
+if k == 52
+    c := Indigo_3
+    c
+if k == 53
+    c := Indigo_4
+    c
+if k == 54
+    c := Indigo_5
+    c
+if k == 55
+    c := Purple_5
+    c
+if k == 56
+    c := Purple_4
+    c
+if k == 57
+    c := Purple_3
+    c
+if k == 58
+    c := Purple_2
+    c
+if k == 59
+    c := Purple_1
+    c
+if k == 60
+    c := Purple_2
+    c
+if k == 61
+    c := Purple_3
+    c
+if k == 62
+    c := Purple_4
+    c
+if k == 63
+    c := Purple_5
+    c
+
+k += 1
+
+if k > 63
+    k := 1
+    k
+
+// Auto Fibonacci Kodu
+threshold_multiplier = input(3, 'Fibonacci Deviation')
+dev_threshold = ta.atr(10) / close * 100 * threshold_multiplier
+depth = 10
+reverse = input(false, 'Reverse Fib?')
+var extendLeft = input.bool(false, 'Extend Left    |    Extend Right', inline='Extend Lines')
+var extendRight = input.bool(true, '', inline='Extend Lines')
+var extending = extend.none
+if extendLeft and extendRight
+    extending := extend.both
+    extending
+if extendLeft and not extendRight
+    extending := extend.left
+    extending
+if not extendLeft and extendRight
+    extending := extend.right
+    extending
+prices = input(true, 'Show Prices?')
+levels = input.bool(true, 'Show Levels?', inline='Levels')
+levelsFormat = input.string('Percent', '', options=['Values', 'Percent'], inline='Levels')
+labelsPosition = input.string('Right', 'Fib Label Position', options=['Left', 'Right'])
+
+var line lineLast = na
+var int iLast = 0
+var int iPrev = 0
+var float pLast = 0
+var isHighLast = false  // otherwise the last pivot is a low pivot
+
+pivots(src, length, isHigh) =>
+    l2 = length * 2
+    c2 = nz(src[length])
+    ok = true
+    for i = 0 to l2 by 1
+        if isHigh and src[i] > c2
+            ok := false
+            ok
+
+        if not isHigh and src[i] < c2
+            ok := false
+            ok
+    if ok
+        [bar_index[length], c2]
+    else
+        [int(na), float(na)]
+[iH, pH] = pivots(high, depth / 2, true)
+[iL, pL] = pivots(low, depth / 2, false)
+
+calc_dev(base_price, price) =>
+    100 * (price - base_price) / price
+
+pivotFound(dev, isHigh, index, price) =>
+    if isHighLast == isHigh and not na(lineLast)
+        // same direction
+        if isHighLast ? price > pLast : price < pLast
+            line.set_xy2(lineLast, index, price)
+            [lineLast, isHighLast]
+        else
+            [line(na), bool(na)]
+    else
+        // reverse the direction (or create the very first line)
+        if math.abs(dev) > dev_threshold
+            // price move is significant
+            id = line.new(iLast, pLast, index, price, color=na, width=1, style=line.style_dashed)
+            [id, isHigh]
+        else
+            [line(na), bool(na)]
+
+if not na(iH)
+    dev = calc_dev(pLast, pH)
+    [id, isHigh] = pivotFound(dev, true, iH, pH)
+    if not na(id)
+        if id != lineLast
+            line.delete(lineLast)
+        lineLast := id
+        isHighLast := isHigh
+        iPrev := iLast
+        iLast := iH
+        pLast := pH
+        pLast
+else
+    if not na(iL)
+        dev = calc_dev(pLast, pL)
+        [id, isHigh] = pivotFound(dev, false, iL, pL)
+        if not na(id)
+            if id != lineLast
+                line.delete(lineLast)
+            lineLast := id
+            isHighLast := isHigh
+            iPrev := iLast
+            iLast := iL
+            pLast := pL
+            pLast
+
+_draw_line(price, col) =>
+    var id = line.new(iLast, price, bar_index, price, color=col, width=1, extend=extending)
+    if not na(lineLast)
+        line.set_xy1(id, line.get_x1(lineLast), price)
+        line.set_xy2(id, line.get_x2(lineLast), price)
+
+_draw_label(price, txt, txtColor) =>
+    x = labelsPosition == 'Left' ? line.get_x1(lineLast) : not extendRight ? line.get_x2(lineLast) : bar_index
+    labelStyle = labelsPosition == 'Left' ? label.style_label_right : label.style_label_left
+    align = labelsPosition == 'Left' ? text.align_right : text.align_left
+    labelsAlignStrLeft = txt + '\n ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏ \n'
+    labelsAlignStrRight = '       ' + txt + '\n ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏ \n'
+    labelsAlignStr = labelsPosition == 'Left' ? labelsAlignStrLeft : labelsAlignStrRight
+    var id = label.new(x=x, y=price, text=labelsAlignStr, textcolor=txtColor, style=labelStyle, textalign=align, color=#00000000)
+    label.set_xy(id, x, price)
+    label.set_text(id, labelsAlignStr)
+    label.set_textcolor(id, txtColor)
+
+_wrap(txt) =>
+    '(' + str.tostring(txt, '#.##') + ')'
+
+_label_txt(level, price) =>
+    l = levelsFormat == 'Values' ? str.tostring(level) + ' ' : str.tostring(level * 100) + '% '
+    (levels ? l : ' ') + (prices ? _wrap(price) : ' ')
+
+_crossing_level(sr, r) =>
+    r > sr and r < sr[1] or r < sr and r > sr[1]
+
+startPrice = reverse ? line.get_y1(lineLast) : pLast
+endPrice = reverse ? pLast : line.get_y1(lineLast)
+
+iHL = startPrice > endPrice
+diff = (iHL ? -1 : 1) * math.abs(startPrice - endPrice)
+
+processLevel(show, value, colorL) =>
+    float m = value
+    r = startPrice + diff * m
+    if show
+        _draw_line(r, colorL)
+        _draw_label(r, _label_txt(m, r), colorL)
+
+show_0 = true
+value_0 = 0
+color_0 = #787b86
+if afibOn
+    processLevel(show_0, value_0, color_0)
+
+show_0_236 = true
+value_0_236 = 0.236
+color_0_236 = #f44336
+if afibOn
+    processLevel(show_0_236, value_0_236, color_0_236)
+
+show_0_382 = true
+value_0_382 = 0.382
+color_0_382 = #81c784
+if afibOn
+    processLevel(show_0_382, value_0_382, color_0_382)
+
+show_0_5 = true
+value_0_5 = 0.5
+color_0_5 = #4caf50
+if afibOn
+    processLevel(show_0_5, value_0_5, color_0_5)
+
+show_0_618 = true
+value_0_618 = 0.618
+color_0_618 = #009688
+if afibOn
+    processLevel(show_0_618, value_0_618, color_0_618)
+
+show_0_786 = true
+value_0_786 = 0.786
+color_0_786 = #64b5f6
+if afibOn
+    processLevel(show_0_786, value_0_786, color_0_786)
+
+show_1 = true
+value_1 = 1
+color_1 = #787b86
+if afibOn
+    processLevel(show_1, value_1, color_1)
+
+//Destek / Direnç Hatları
+h1000 = ta.highest(1000)
+h750 = ta.highest(750)
+h500 = ta.highest(500)
+h250 = ta.highest(250)
+h100 = ta.highest(100)
+h50 = ta.highest(50)
+h10 = ta.highest(10)
+plot(srLines ? h1000 : na, title='R1', color=close > h1000 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? h750 : na, title='R2', color=close > h750 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? h500 : na, title='R3', color=close > h500 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? h250 : na, title='R4', color=close > h250 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? h100 : na, title='R5', color=close > h100 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? h50 : na, title='R6', color=close > h50 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? h10 : na, title='R6', color=close > h50 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+
+l1000 = ta.lowest(1000)
+l750 = ta.lowest(750)
+l500 = ta.lowest(500)
+l250 = ta.lowest(250)
+l100 = ta.lowest(100)
+l50 = ta.lowest(50)
+l10 = ta.lowest(10)
+plot(srLines ? l1000 : na, title='S1', color=close > l1000 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? l750 : na, title='S2', color=close > l750 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? l500 : na, title='S3', color=close > l500 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? l250 : na, title='S4', color=close > l250 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? l100 : na, title='S5', color=close > l100 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? l50 : na, title='S6', color=close > l50 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+plot(srLines ? l10 : na, title='S6', color=close > l50 ? color.green : color.red, linewidth=1, offset=-9999, trackprice=true)
+
+//Boşluk Çizgilerinde Kullanılan Değişkenleri Tanımlar
+basis = ta.sma(close, 20)
+twoDev = 2 * ta.stdev(close, 20)
+upper3 = basis + twoDev
+lower3 = basis - twoDev
+threeDev = 3 * ta.stdev(close, 20)
+upper4 = basis + threeDev
+lower4 = basis - threeDev
+
+//Plost Boş Çizgiler
+plot(voidLines ? basis : na, 'Basis', color.new(color.purple, 0), editable=false)
+p5 = plot(voidLines ? upper3 : na, 'Upper 200%', c, editable=false)
+p6 = plot(voidLines ? lower3 : na, 'Lower 200%', c, editable=false)
+p7 = plot(voidLines ? upper4 : na, 'Upper 300%', c, editable=false)
+p8 = plot(voidLines ? lower4 : na, 'Lower 300%', c, editable=false)
+fill(p7, p5, color.new(color.teal, 75))
+fill(p8, p6, color.new(color.purple, 75))
+
+//Renklendirme Çubukları için Kuralları Tanımlar
+colorBars = close > basis ? color.teal : close < basis ? color.purple : na
+
+//EMA Değişkenlerini Tanımlar
+ema8 = ta.ema(close, 20)
+ema200 = ta.ema(close, 200)
+
+//Renkler Çubuklar
+barcolor(colorBar ? colorBars : na)
+
+//Plots EMA Çizgileri
+plot(emaLines ? ema8 : na, 'EMA 20', color.new(color.white, 0), 2)
+plot(emaLines ? ema200 : na, 'EMA 200', color.new(color.green, 0), 2)
+
+
+
+
+
+
+// NU-PU  
+
+///////(title="Smart RSI with Divergences", shorttitle="smart rsi", overlay=true)
+
+// Inputs
+length = input(14, title='Length')
+src = close
+rsi_value = ta.rsi(src, length)
+
+puColor = input(color.new(color.green, 0), title='PU Color')
+nuColor = input(color.new(color.red, 0), title='NU Color')
+neutralColor = color.gray
+labelDistancePip = input.float(10, title='Etiket Mesafesi (Pip)')
+reverseOptions = input(false, title='Opsiyonları Tersine Çevir')
+labelStyleDown = label.style_label_down
+labelStyleUp = label.style_label_up
+
+lbR = 3
+lbL = 3
+rangeUpper = 60
+rangeLower = 5
+
+// Divergence functions from first code
+_inRange(cond) =>
+    bars = ta.barssince(cond)
+    rangeLower <= bars and bars <= rangeUpper
+
+plFound = na(ta.pivotlow(rsi_value, lbL, lbR)) ? false : true
+phFound = na(ta.pivothigh(rsi_value, lbL, lbR)) ? false : true
+
+oscHL = rsi_value[lbR] > ta.valuewhen(plFound, rsi_value[lbR], 1) and _inRange(plFound[1])
+priceLL = low[lbR] < ta.valuewhen(plFound, low[lbR], 1)
+bullCond = priceLL and oscHL and plFound
+
+oscLL = rsi_value[lbR] < ta.valuewhen(plFound, rsi_value[lbR], 1) and _inRange(plFound[1])
+priceHL = low[lbR] > ta.valuewhen(plFound, low[lbR], 1)
+hiddenBullCond = priceHL and oscLL and plFound
+
+oscLH = rsi_value[lbR] < ta.valuewhen(phFound, rsi_value[lbR], 1) and _inRange(phFound[1])
+priceHH = high[lbR] > ta.valuewhen(phFound, high[lbR], 1)
+bearCond = priceHH and oscLH and phFound
+
+oscHH = rsi_value[lbR] > ta.valuewhen(phFound, rsi_value[lbR], 1) and _inRange(phFound[1])
+priceLH = high[lbR] < ta.valuewhen(phFound, high[lbR], 1)
+hiddenBearCond = priceLH and oscHH and phFound
+
+// Labels
+var labelColor = neutralColor
+var labelText = ''
+
+if bullCond or hiddenBullCond
+    labelColor := color.green
+    labelText := 'BOGA'
+    labelText
+else if bearCond or hiddenBearCond
+    labelColor := color.red
+    labelText := 'AYI'
+    labelText
+else
+    labelColor := neutralColor
+    labelText := ''
+    labelText
+
+var label lbl = na
+
+f_removeLabel() =>
+    if not na(lbl)
+        label.delete(lbl)
+
+if bar_index == bar_index[0]
+    f_removeLabel()
+    position = close > open ? low - syminfo.mintick * labelDistancePip : high + syminfo.mintick * labelDistancePip
+    label_style = close < open ? reverseOptions ? labelStyleUp : labelStyleDown : reverseOptions ? labelStyleDown : labelStyleUp
+    label_text = str.tostring(int(rsi_value)) + ' ' + labelText
+    lbl := label.new(x=bar_index, y=position, text=label_text, yloc=yloc.price, xloc=xloc.bar_index, style=label_style, color=labelColor, textcolor=color.white, size=size.small)
+    lbl
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////vector////////////////////////////////////////
+
+import TradersReality/Traders_Reality_Lib/1 as trLib
+
+color redVectorColor = input.color(title='Vector: Red', group='PVSRA Colors', defval=color.red, inline='vectors')
+color greenVectorColor = input.color(title='Green', group='PVSRA Colors', defval=color.lime, inline='vectors')
+color violetVectorColor = input.color(title='Violet', group='PVSRA Colors', defval=color.fuchsia, inline='vectors')
+color blueVectorColor = input.color(title='Blue', group='PVSRA Colors', defval=color.blue, inline='vectors', tooltip='Bull bars are green and bear bars are red when the bar is with volume >= 200% of the average volume of the 10 previous bars, or bars where the product of candle spread x candle volume is >= the highest for the 10 previous bars.\n Bull bars are blue and bear are violet when the bar is with with volume >= 150% of the average volume of the 10 previous bars.')
+color regularCandleUpColor = input.color(title='Regular: Up Candle', group='PVSRA Colors', defval=#999999, inline='nonVectors')
+color regularCandleDownColor = input.color(title='Down Candle', group='PVSRA Colors', defval=#2a10ef, inline='nonVectors', tooltip='Bull bars are light gray and bear are dark gray when none of the red/green/blue/violet vector conditions are met.')
+bool setcandlecolors = input.bool(false, title='Set PVSRA candle colors?', group='PVSRA Colors', inline='setCandle')
+
+int zonesMax = input.int(500, 'Maximum zones to draw', group='Vector Candle Zones')
+string zoneType = input.string(group='Vector Candle Zones', defval='Body only', title='Zone top/bottom is defined with: ', options=['Body only', 'Body with wicks'])
+string zoneUpdateType = input.string(group='Vector Candle Zones', defval='Body with wicks', title='Zones are cleared using candle: ', options=['Body only', 'Body with wicks'])
+int borderWidth = input.int(0, 'Zone border width', group='Vector Candle Zones')
+bool colorOverride = input.bool(true, 'Override color?' , group='Vector Candle Zones', inline="vcz1")
+color zoneColor = input.color(title='Color', group='Vector Candle Zones', defval=color.rgb(255, 230, 75, 90), inline="vcz1", tooltip='the vector candle zones color to use if you dont not want to use the PVSRA Candle Colors.')
+int transperancy = input.int(90, 'Zone Transperancy', minval = 0, maxval = 100, group='Vector Candle Zones', tooltip='If the vector candle zones color is not overriden, then we want to set the transparancy of the vector candle colors as defined by the PBSRA candle colors. This setting only affects the candle zone colors not the candle colors themselves.')
+
+bool overrideSym = input.bool(group='PVSRA Override', title='Override chart symbol?', defval=false, inline='pvsra')
+string pvsraSym = input.string(group='PVSRA Override', title='', defval='INDEX:BTCUSD', tooltip='You can use INDEX:BTCUSD or you can combine multiple feeds, for example BINANCE:BTCUSDT+COINBASE:BTCUSD. Note that adding too many will slow things down.', inline='pvsra')
+
+
+
+pvsraVolume(overrideSymbolX, pvsraSymbolX, tickerIdX) =>
+    request.security(overrideSymbolX ? pvsraSymbolX : tickerIdX, '', volume, barmerge.gaps_off, barmerge.lookahead_off)
+pvsraHigh(overrideSymbolX, pvsraSymbolX, tickerIdX) =>
+    request.security(overrideSymbolX ? pvsraSymbolX : tickerIdX, '', high, barmerge.gaps_off, barmerge.lookahead_off)
+pvsraLow(overrideSymbolX, pvsraSymbolX, tickerIdX) =>
+    request.security(overrideSymbolX ? pvsraSymbolX : tickerIdX, '', low, barmerge.gaps_off, barmerge.lookahead_off)
+pvsraClose(overrideSymbolX, pvsraSymbolX, tickerIdX) =>
+    request.security(overrideSymbolX ? pvsraSymbolX : tickerIdX, '', close, barmerge.gaps_off, barmerge.lookahead_off)
+pvsraOpen(overrideSymbolX, pvsraSymbolX, tickerIdX) =>
+    request.security(overrideSymbolX ? pvsraSymbolX : tickerIdX, '', open, barmerge.gaps_off, barmerge.lookahead_off)
+
+
+pvsraVolume = pvsraVolume(overrideSym, pvsraSym, syminfo.tickerid)
+pvsraHigh = pvsraHigh(overrideSym, pvsraSym, syminfo.tickerid)
+pvsraLow = pvsraLow(overrideSym, pvsraSym, syminfo.tickerid)
+pvsraClose = pvsraClose(overrideSym, pvsraSym, syminfo.tickerid)
+pvsraOpen = pvsraOpen(overrideSym, pvsraSym, syminfo.tickerid)
+[pvsraColor, alertFlag, averageVolume, volumeSpread, highestVolumeSpread] = trLib.calcPvsra(pvsraVolume, pvsraHigh, pvsraLow, pvsraClose, pvsraOpen, redVectorColor, greenVectorColor, violetVectorColor, blueVectorColor, regularCandleDownColor, regularCandleUpColor)
+
+
+var zoneBoxesAbove = array.new_box()
+var zoneBoxesBelow = array.new_box()
+
+
+barcolor(setcandlecolors ? pvsraColor : na)
+pvsra = trLib.getPvsraFlagByColor(pvsraColor, redVectorColor, greenVectorColor, violetVectorColor, blueVectorColor, regularCandleUpColor)
+trLib.updateZones(pvsra, 0, zoneBoxesBelow, zonesMax, pvsraHigh, pvsraLow, pvsraOpen, pvsraClose, transperancy, zoneUpdateType, zoneColor, zoneType, borderWidth, colorOverride, redVectorColor, greenVectorColor, violetVectorColor, blueVectorColor)
+trLib.updateZones(pvsra, 1, zoneBoxesAbove, zonesMax, pvsraHigh, pvsraLow, pvsraOpen, pvsraClose, transperancy, zoneUpdateType, zoneColor, zoneType, borderWidth, colorOverride, redVectorColor, greenVectorColor, violetVectorColor, blueVectorColor)
+trLib.cleanarr(zoneBoxesAbove)
+trLib.cleanarr(zoneBoxesBelow)
+
+////////////////// test kod parçası///////////////////////////////////
+
+///////////Command
+
+kijun_ = input(false, title='Kijunsen Ac/Kapa')
+tenkan_ = input(false, title='Tenkansen Ac/Kapa')
+
+smaAC = input(false, title='Basit Hareketli Ortalama Ac/Kapa')
+emaAC = input(false, title='Ustel Hareketli Ortalama Ac/Kapa')
+
+//basit hareketli ortalamalar
+ma200 = ta.sma(src, 200)
+ma100 = ta.sma(src, 100)
+ma50 = ta.sma(src, 50)
+ma20 = ta.sma(src, 20)
+plot(smaAC ? ma200 : na, color=color.new(color.orange, 0), title='MA200')
+plot(smaAC ? ma100 : na, color=color.new(color.blue, 0), title='MA100')
+plot(smaAC ? ma50 : na, color=color.new(color.red, 0), title='MA50')
+plot(smaAC ? ma20 : na, color=color.new(color.green, 0), title='MA20')
+
+//Ustel hareketli ortalamalar
+ema250 = ta.ema(src, 250)
+ema21 = ta.ema(src, 21)
+ema55 = ta.ema(src, 55)
+ema89 = ta.ema(src, 89)
+ema144 = ta.ema(src, 144)
+plot(emaAC ? ema9 : na, color=color.new(color.orange, 0), title='EMA9')
+plot(emaAC ? ema21 : na, color=color.new(color.blue, 0), title='EMA21')
+plot(emaAC ? ema55 : na, color=color.new(color.red, 0), title='EMA55')
+plot(emaAC ? ema89 : na, color=color.new(color.green, 0), title='EMA89')
+plot(emaAC ? ema144 : na, color=color.new(color.aqua, 0), title='EMA144')
+
+//ichimoku // degerleri degistirmek isteyen // isaretlerini kaldirsin
+conversionPeriods = 9  //input(9, minval=1, title="Conversion Line Length")
+basePeriods = 26  //input(26, minval=1, title="Base Line Length")
+laggingSpan2Periods = 52  //input(52, minval=1, title="Lagging Span 2 Length")
+displacement = 26  //input(26, minval=1, title="Displacement")
+donchian(len) =>
+    math.avg(ta.lowest(len), ta.highest(len))
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = math.avg(conversionLine, baseLine)
+leadLine2 = donchian(laggingSpan2Periods)
+plot(tenkan_ ? conversionLine : na, color=color.new(#0496ff, 0), title='Tenkansen')
+plot(kijun_ ? baseLine : na, color=color.new(#991515, 0), title='Kijunsen')
+//Command
+AUTO = "Auto"
+DAILY = "Daily"
+WEEKLY = "Weekly"
+MONTHLY = "Monthly"
+QUARTERLY = "Quarterly"
+YEARLY = "Yearly"
+BIYEARLY = "Biyearly"
+TRIYEARLY = "Triyearly"
+QUINQUENNIALLY = "Quinquennially"
+DECENNIALLY = "Decennially"
+
+TRADITIONAL = "Traditional"
+FIBONACCI = "Fibonacci"
+WOODIE = "Woodie"
+CLASSIC = "Classic"
+DEMARK = "DM"
+CAMARILLA = "Camarilla"
+
+kind = input.string(title="Type", defval="Traditional", options=[TRADITIONAL, FIBONACCI, WOODIE, CLASSIC, DEMARK, CAMARILLA])
+pivot_time_frame = input.string(title="Pivots Timeframe", defval=AUTO, options=[AUTO, DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY, BIYEARLY, TRIYEARLY, QUINQUENNIALLY, DECENNIALLY])
+look_back = input.int(title="Number of Pivots Back", defval=15, minval=1, maxval=5000)
+is_daily_based = input.bool(title="Use Daily-based Values", defval=true, tooltip="When this option is unchecked, Pivot Points will use intraday data while calculating on intraday charts. If Extended Hours are displayed on the chart, they will be taken into account during the pivot level calculation. If intraday OHLC values are different from daily-based values (normal for stocks), the pivot levels will also differ.")
+show_labels = input.bool(title="Show Labels", defval=true, inline="labels")
+position_labels = input.string("Left", "", options=["Left", "Right"], inline="labels")
+
+var DEF_COLOR = #FB8C00
+var arr_time = array.new_int()
+var p = array.new_float()
+p_show = input.bool(true, "P‏  ‏  ‏  ‏  ‏  ‏  ‏  ‏", inline="P")
+p_color = input.color(DEF_COLOR, "", inline="P")
+var r1 = array.new_float()
+var s1 = array.new_float()
+s1r1_show = input.bool(true, "S1/R1", inline="S1/R1")
+s1r1_color = input.color(DEF_COLOR, "", inline="S1/R1")
+var r2 = array.new_float()
+var s2 = array.new_float()
+s2r2_show = input.bool(true, "S2/R2", inline="S2/R2")
+s2r2_color = input.color(DEF_COLOR, "", inline="S2/R2")
+var r3 = array.new_float()
+var s3 = array.new_float()
+s3r3_show = input.bool(true, "S3/R3", inline="S3/R3")
+s3r3_color = input.color(DEF_COLOR, "", inline="S3/R3")
+var r4 = array.new_float()
+var s4 = array.new_float()
+s4r4_show = input.bool(true, "S4/R4", inline="S4/R4")
+s4r4_color = input.color(DEF_COLOR, "", inline="S4/R4")
+var r5 = array.new_float()
+var s5 = array.new_float()
+s5r5_show = input.bool(true, "S5/R5", inline="S5/R5")
+s5r5_color = input.color(DEF_COLOR, "", inline="S5/R5")
+pivotX_open = float(na)
+pivotX_open := nz(pivotX_open[1], open)
+pivotX_high = float(na)
+pivotX_high := nz(pivotX_high[1], high)
+pivotX_low = float(na)
+pivotX_low := nz(pivotX_low[1], low)
+pivotX_prev_open = float(na)
+pivotX_prev_open := nz(pivotX_prev_open[1])
+pivotX_prev_high = float(na)
+pivotX_prev_high := nz(pivotX_prev_high[1])
+pivotX_prev_low = float(na)
+pivotX_prev_low := nz(pivotX_prev_low[1])
+pivotX_prev_close = float(na)
+pivotX_prev_close := nz(pivotX_prev_close[1])
+
+get_pivot_resolution() =>
+    resolution = "M"
+    if pivot_time_frame == AUTO
+        if timeframe.isintraday
+            resolution := timeframe.multiplier <= 15 ? "D" : "W"
+        else if timeframe.isweekly or timeframe.ismonthly
+            resolution := "12M"
+    else if pivot_time_frame == DAILY
+        resolution := "D"
+    else if pivot_time_frame == WEEKLY
+        resolution := "W"
+    else if pivot_time_frame == MONTHLY
+        resolution := "M"
+    else if pivot_time_frame == QUARTERLY
+        resolution := "3M"
+    else if pivot_time_frame == YEARLY or pivot_time_frame == BIYEARLY or pivot_time_frame == TRIYEARLY or pivot_time_frame == QUINQUENNIALLY or pivot_time_frame == DECENNIALLY
+        resolution := "12M"
+    resolution
+
+var lines = array.new_line()
+var labels = array.new_label()
+
+draw_line(i, pivot, col) =>
+    if array.size(arr_time) > 1
+        array.push(lines, line.new(array.get(arr_time, i), array.get(pivot, i), array.get(arr_time, i + 1), array.get(pivot, i), color=col, xloc=xloc.bar_time))
+
+draw_label(i, y, txt, txt_color) =>
+    if show_labels
+        offset = '‏  ‏  ‏  ‏  ‏'
+        labels_align_str_left= position_labels == "Left" ? txt + offset : offset + txt
+        x = position_labels == "Left" ? array.get(arr_time, i) : array.get(arr_time, i + 1)
+        array.push(labels, label.new(x = x, y=y, text=labels_align_str_left, textcolor=txt_color, style=label.style_label_center, color=#00000000, xloc=xloc.bar_time))
+
+traditional() =>
+    pivotX_Median = (pivotX_prev_high + pivotX_prev_low + pivotX_prev_close) / 3
+    array.push(p, pivotX_Median)
+    array.push(r1, pivotX_Median * 2 - pivotX_prev_low)
+    array.push(s1, pivotX_Median * 2 - pivotX_prev_high)
+    array.push(r2, pivotX_Median + 1 * (pivotX_prev_high - pivotX_prev_low))
+    array.push(s2, pivotX_Median - 1 * (pivotX_prev_high - pivotX_prev_low))
+    array.push(r3, pivotX_Median * 2 + (pivotX_prev_high - 2 * pivotX_prev_low))
+    array.push(s3, pivotX_Median * 2 - (2 * pivotX_prev_high - pivotX_prev_low))
+    array.push(r4, pivotX_Median * 3 + (pivotX_prev_high - 3 * pivotX_prev_low))
+    array.push(s4, pivotX_Median * 3 - (3 * pivotX_prev_high - pivotX_prev_low))
+    array.push(r5, pivotX_Median * 4 + (pivotX_prev_high - 4 * pivotX_prev_low))
+    array.push(s5, pivotX_Median * 4 - (4 * pivotX_prev_high - pivotX_prev_low))
+
+fibonacci() =>
+    pivotX_Median = (pivotX_prev_high + pivotX_prev_low + pivotX_prev_close) / 3
+    pivot_range = pivotX_prev_high - pivotX_prev_low
+    array.push(p, pivotX_Median)
+    array.push(r1, pivotX_Median + 0.382 * pivot_range)
+    array.push(s1, pivotX_Median - 0.382 * pivot_range)
+    array.push(r2, pivotX_Median + 0.618 * pivot_range)
+    array.push(s2, pivotX_Median - 0.618 * pivot_range)
+    array.push(r3, pivotX_Median + 1 * pivot_range)
+    array.push(s3, pivotX_Median - 1 * pivot_range)
+
+woodie() =>
+    pivotX_Woodie_Median = (pivotX_prev_high + pivotX_prev_low + pivotX_open * 2)/4
+    pivot_range = pivotX_prev_high - pivotX_prev_low
+    array.push(p, pivotX_Woodie_Median)
+    array.push(r1, pivotX_Woodie_Median * 2 - pivotX_prev_low)
+    array.push(s1, pivotX_Woodie_Median * 2 - pivotX_prev_high)
+    array.push(r2, pivotX_Woodie_Median + 1 * pivot_range)
+    array.push(s2, pivotX_Woodie_Median - 1 * pivot_range)
+
+    pivot_point_r3 = pivotX_prev_high + 2 * (pivotX_Woodie_Median - pivotX_prev_low)
+    pivot_point_s3 = pivotX_prev_low - 2 * (pivotX_prev_high - pivotX_Woodie_Median)
+    array.push(r3, pivot_point_r3)
+    array.push(s3, pivot_point_s3)
+    array.push(r4, pivot_point_r3 + pivot_range)
+    array.push(s4, pivot_point_s3 - pivot_range)
+
+classic() =>
+    pivotX_Median = (pivotX_prev_high + pivotX_prev_low + pivotX_prev_close)/3
+    pivot_range = pivotX_prev_high - pivotX_prev_low
+    array.push(p, pivotX_Median)
+    array.push(r1, pivotX_Median * 2 - pivotX_prev_low)
+    array.push(s1, pivotX_Median * 2 - pivotX_prev_high)
+    array.push(r2, pivotX_Median + 1 * pivot_range)
+    array.push(s2, pivotX_Median - 1 * pivot_range)
+    array.push(r3, pivotX_Median + 2 * pivot_range)
+    array.push(s3, pivotX_Median - 2 * pivot_range)
+    array.push(r4, pivotX_Median + 3 * pivot_range)
+    array.push(s4, pivotX_Median - 3 * pivot_range)
+
+demark() =>
+    pivotX_Demark_X = pivotX_prev_high + pivotX_prev_low * 2 + pivotX_prev_close
+    if pivotX_prev_close == pivotX_prev_open
+        pivotX_Demark_X := pivotX_prev_high + pivotX_prev_low + pivotX_prev_close * 2
+    if pivotX_prev_close > pivotX_prev_open
+        pivotX_Demark_X := pivotX_prev_high * 2 + pivotX_prev_low + pivotX_prev_close
+    array.push(p, pivotX_Demark_X / 4)
+    array.push(r1, pivotX_Demark_X / 2 - pivotX_prev_low)
+    array.push(s1, pivotX_Demark_X / 2 - pivotX_prev_high)
+
+camarilla() =>
+    pivotX_Median = (pivotX_prev_high + pivotX_prev_low + pivotX_prev_close) / 3
+    pivot_range = pivotX_prev_high - pivotX_prev_low
+    array.push(p, pivotX_Median)
+    array.push(r1, pivotX_prev_close + pivot_range * 1.1 / 12.0)
+    array.push(s1, pivotX_prev_close - pivot_range * 1.1 / 12.0)
+    array.push(r2, pivotX_prev_close + pivot_range * 1.1 / 6.0)
+    array.push(s2, pivotX_prev_close - pivot_range * 1.1 / 6.0)
+    array.push(r3, pivotX_prev_close + pivot_range * 1.1 / 4.0)
+    array.push(s3, pivotX_prev_close - pivot_range * 1.1 / 4.0)
+    array.push(r4, pivotX_prev_close + pivot_range * 1.1 / 2.0)
+    array.push(s4, pivotX_prev_close - pivot_range * 1.1 / 2.0)
+
+resolution = get_pivot_resolution()
+
+[sec_open, sec_high, sec_low, sec_close] = request.security(syminfo.tickerid, resolution, [open, high, low, close], lookahead = barmerge.lookahead_on)
+sec_open_gaps_on = request.security(syminfo.tickerid, resolution, open, gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_on)
+
+var number_of_years = 0
+is_change_years = false
+var custom_years_resolution = pivot_time_frame == BIYEARLY or pivot_time_frame == TRIYEARLY or pivot_time_frame == QUINQUENNIALLY or pivot_time_frame == DECENNIALLY
+if custom_years_resolution and ta.change(time(resolution))
+    number_of_years += 1
+    if pivot_time_frame == BIYEARLY and number_of_years % 2 == 0
+        is_change_years := true
+        number_of_years := 0
+    else if pivot_time_frame == TRIYEARLY and number_of_years % 3 == 0
+        is_change_years := true
+        number_of_years := 0
+    else if pivot_time_frame == QUINQUENNIALLY and number_of_years % 5 == 0
+        is_change_years := true
+        number_of_years := 0
+	else if pivot_time_frame == DECENNIALLY and number_of_years % 10 == 0
+        is_change_years := true
+        number_of_years := 0
+
+var is_change = false
+var uses_current_bar = timeframe.isintraday and kind == WOODIE
+var change_time = int(na)
+is_time_change = (ta.change(time(resolution)) and not custom_years_resolution) or is_change_years
+if is_time_change
+    change_time := time
+
+
+if (not uses_current_bar and is_time_change) or (uses_current_bar and not na(sec_open_gaps_on))
+    if is_daily_based and not custom_years_resolution
+        pivotX_prev_open := sec_open[1]
+        pivotX_prev_high := sec_high[1]
+        pivotX_prev_low := sec_low[1]
+        pivotX_prev_close := sec_close[1]
+        pivotX_open := sec_open
+        pivotX_high := sec_high
+        pivotX_low := sec_low
+    else
+        pivotX_prev_high := pivotX_high
+        pivotX_prev_low := pivotX_low
+        pivotX_prev_open := pivotX_open
+        pivotX_open := open
+        pivotX_high := high
+        pivotX_low := low
+        pivotX_prev_close := close[1]
+
+    if barstate.islast and not is_change and  array.size(arr_time) > 0
+        array.set(arr_time, array.size(arr_time) - 1, change_time)
+    else
+        array.push(arr_time, change_time)
+
+    if kind == TRADITIONAL
+        traditional()
+    else if kind == FIBONACCI
+        fibonacci()
+    else if kind == WOODIE
+        woodie()
+    else if kind == CLASSIC
+        classic()
+    else if kind == DEMARK
+        demark()
+    else if kind == CAMARILLA
+        camarilla()
+
+    if array.size(arr_time) > look_back
+        if array.size(arr_time) > 0
+            array.shift(arr_time)
+        if array.size(p) > 0 and p_show
+            array.shift(p)
+        if array.size(r1) > 0 and s1r1_show
+            array.shift(r1)
+        if array.size(s1) > 0 and s1r1_show
+            array.shift(s1)
+        if array.size(r2) > 0 and s2r2_show
+            array.shift(r2)
+        if array.size(s2) > 0 and s2r2_show
+            array.shift(s2)
+        if array.size(r3) > 0 and s3r3_show
+            array.shift(r3)
+        if array.size(s3) > 0 and s3r3_show
+            array.shift(s3)
+        if array.size(r4) > 0 and s4r4_show
+            array.shift(r4)
+        if array.size(s4) > 0 and s4r4_show
+            array.shift(s4)
+        if array.size(r5) > 0 and s5r5_show
+            array.shift(r5)
+        if array.size(s5) > 0 and s5r5_show
+            array.shift(s5)
+    is_change := true
+else
+    if is_daily_based and not custom_years_resolution
+        pivotX_high := math.max(pivotX_high, sec_high)
+        pivotX_low := math.min(pivotX_low, sec_low)
+    else
+        pivotX_high := math.max(pivotX_high, high)
+        pivotX_low := math.min(pivotX_low, low)
+
+if barstate.islast and array.size(arr_time) > 0 and is_change
+    is_change := false
+    if array.size(arr_time) > 2 and custom_years_resolution
+        last_pivot_time = array.get(arr_time, array.size(arr_time) - 1)
+        prev_pivot_time = array.get(arr_time, array.size(arr_time) - 2)
+        estimate_pivot_time = last_pivot_time - prev_pivot_time
+        array.push(arr_time, last_pivot_time + estimate_pivot_time)
+    else
+        array.push(arr_time, time_close(resolution))
+
+    for i = 0 to array.size(lines) - 1
+        if array.size(lines) > 0
+            line.delete(array.shift(lines))
+        if array.size(lines) > 0
+            label.delete(array.shift(labels))
+
+    for i = 0 to array.size(arr_time) - 2
+        if array.size(p) > 0 and p_show
+            draw_line(i, p, p_color)
+            draw_label(i, array.get(p, i), "P", p_color)
+        if array.size(r1) > 0 and s1r1_show
+            draw_line(i, r1, s1r1_color)
+            draw_label(i, array.get(r1, i), "R1", s1r1_color)
+        if array.size(s1) > 0 and s1r1_show
+            draw_line(i, s1, s1r1_color)
+            draw_label(i, array.get(s1, i), "S1", s1r1_color)
+        if array.size(r2) > 0 and s2r2_show
+            draw_line(i, r2, s2r2_color)
+            draw_label(i, array.get(r2, i), "R2", s2r2_color)
+        if array.size(s2) > 0 and s2r2_show
+            draw_line(i, s2, s2r2_color)
+            draw_label(i, array.get(s2, i), "S2", s2r2_color)
+        if array.size(r3) > 0 and s3r3_show
+            draw_line(i, r3, s3r3_color)
+            draw_label(i, array.get(r3, i), "R3", s3r3_color)
+        if array.size(s3) > 0 and s3r3_show
+            draw_line(i, s3, s3r3_color)
+            draw_label(i, array.get(s3, i), "S3", s3r3_color)
+        if array.size(r4) > 0 and s4r4_show
+            draw_line(i, r4, s4r4_color)
+            draw_label(i, array.get(r4, i), "R4", s4r4_color)
+        if array.size(s4) > 0 and s4r4_show
+            draw_line(i, s4, s4r4_color)
+            draw_label(i, array.get(s4, i), "S4", s4r4_color)
+        if array.size(r5) > 0 and s5r5_show
+            draw_line(i, r5, s5r5_color)
+            draw_label(i, array.get(r5, i), "R5", s5r5_color)
+        if array.size(s5) > 0 and s5r5_show
+            draw_line(i, s5, s5r5_color)
+            draw_label(i, array.get(s5, i), "S5", s5r5_color)
+
+
+dashboard_location  = input.session("Middle Right", "Dashboard Posision", ["Top Right", "Bottom Right", "Top Left", "Bottom Left", "Top Center", "Bottom Center", "Middle Right"], group = 'Style Settings')
+text_size = input.session('Normal', "Dashboard Size", options = ["Tiny", "Small", "Normal", "Large"], group = 'Style Settings')
+text_color = input(#d1d4dc, title = "Text Color", group = 'Style Settings')
+table_color = input(color.gray, title = "Table Color", group = 'Style Settings')
+max_table_size = 160
+min_table_size = 10
+
+show_1m = input(true, title = 'Show 1m', group = 'Timeframe Settings')
+show_3m = input(true, title = 'Show 3m ', group = 'Timeframe Settings')
+show_5m = input(true, title = 'Show 5m', group = 'Timeframe Settings')
+show_15m = input(true, title = 'Show 15m', group = 'Timeframe Settings')
+show_30m = input(true, title = 'Show 30m', group = 'Timeframe Settings')
+show_60m = input(true, title = 'Show 1h', group = 'Timeframe Settings')
+show_240m = input(true, title = 'Show 4h', group = 'Timeframe Settings')
+show_D = input(false, title = 'Show D', group = 'Timeframe Settings')
+show_W = input(false, title = 'Show W', group = 'Timeframe Settings')
+show_M = input(false, title = 'Show M', group = 'Timeframe Settings')
+
+f_MACDV(_close) =>
+    CLS = _close[1]
+    length_MA1 = input.int(title = "First MA Period", defval = 50, minval = 1, group = 'Moving Avarages Settings')
+    length_MA2 = input.int(title = "Second MA Period", defval = 200, minval = 1, group = 'Moving Avarages Settings')
+    MA1 = ta.ema(_close, length_MA1)
+    MA2 = ta.ema(_close, length_MA2)
+    [CLS, MA1, MA2]
+
+var table_position = dashboard_location == 'Top Right' ? position.top_right :
+  dashboard_location == 'Top Left' ? position.top_left :
+  dashboard_location == 'Top Center' ? position.top_center :
+  dashboard_location == 'Bottom Right' ? position.bottom_right :
+  dashboard_location == 'Bottom Left' ? position.bottom_left :
+  dashboard_location == 'Bottom Center' ? position.bottom_center :
+  dashboard_location == 'Middle Right' ? position.middle_right :
+  dashboard_location == 'Middle Left' ? position.middle_left : position.bottom_right
+  
+var table_text_size = text_size == 'Normal' ? size.normal :
+  text_size == 'Tiny' ? size.tiny :
+  text_size == 'Small' ? size.small : size.small
+
+var t = table.new(table_position, 15, math.abs(max_table_size - min_table_size) + 2,
+  frame_color = table_color,
+  frame_width = 2,
+  border_color = table_color,
+  border_width = 2)
+
+[CLS_1_min, MA1_1_min, MA2_1_min] = request.security(syminfo.tickerid, "1", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_3_min, MA1_3_min, MA2_3_min] = request.security(syminfo.tickerid, "3", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_5_min, MA1_5_min, MA2_5_min] = request.security(syminfo.tickerid, "5", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_15_min, MA1_15_min, MA2_15_min] = request.security(syminfo.tickerid, "15", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_30_min, MA1_30_min, MA2_30_min] = request.security(syminfo.tickerid, "30", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_1_hour, MA1_1_hour, MA2_1_hour] = request.security(syminfo.tickerid, "60", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_4_hour, MA1_4_hour, MA2_4_hour] = request.security(syminfo.tickerid, "240", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_D, MA1_D, MA2_D] = request.security(syminfo.tickerid, "D", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_W, MA1_W, MA2_W] = request.security(syminfo.tickerid, "W", f_MACDV(close), lookahead = barmerge.lookahead_on)
+[CLS_M, MA1_M, MA2_M] = request.security(syminfo.tickerid, "M", f_MACDV(close), lookahead = barmerge.lookahead_on)
+
+if (barstate.islast)
+    if (show_1m)
+        table.cell(t, 1, 2, "1m", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 2, MA1_1_min > MA2_1_min ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_3m)
+        table.cell(t, 1, 3, "3m", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 3, MA1_3_min > MA2_3_min ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_5m)
+        table.cell(t, 1, 4, "5m", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 4, MA1_5_min > MA2_5_min ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_15m)
+        table.cell(t, 1, 5, "15m", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 5, MA1_15_min > MA2_15_min ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_30m)
+        table.cell(t, 1, 6, "30m", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 6, MA1_30_min > MA2_30_min ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_60m)
+        table.cell(t, 1, 7, "1h", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 7, MA1_1_hour > MA2_1_hour ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_240m)
+        table.cell(t, 1, 8, "4h", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 8, MA1_4_hour > MA2_4_hour ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_D)
+        table.cell(t, 1, 9, "D", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 9, MA1_D > MA2_D ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_W)
+        table.cell(t, 1, 10, "W", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 10, MA1_W > MA2_W ? "🟢" : "🔴", text_size = table_text_size)
+
+    if (show_M)
+        table.cell(t, 1, 11, "M", text_color = text_color, text_size = table_text_size)
+        table.cell(t, 5, 11, MA1_M > MA2_M ? "🟢" : "🔴", text_size = table_text_size)
+
+
+//trend doji emmo
+var int TYPE_UP = 1
+var int TYPE_DOWN = -1
+var string LINE_WIDTH1_STR = "Width 1"
+var string LINE_WIDTH2_STR = "Width 2"
+_get_width(string str_input) =>
+    switch str_input // {string:int}
+        LINE_WIDTH1_STR => 1
+        LINE_WIDTH2_STR => 2
+
+
+
+//////////////////////////////////////////////////////////////////////ZİKZAK KODLARI//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+tf = input.timeframe(defval='D', title='ZigZag Resolution')
+prd = input.int(defval=2, title='ZigZag Period', minval=2, maxval=10)
+showzigzag = input(defval=false, title='Show Zig Zag')
+showfibo = input(defval=true, title='Show Fibonacci Ratios')
+colorfulfibo = input(defval=false, title='Colorful Fibonacci Levels')
+labelcol = input(defval=color.blue, title='Text Color')
+fibolinecol = input(defval=color.lime, title='Line Color')
+upcol = input.color(defval=color.lime, title='Zigzag Line Colors', inline='zzcol')
+dncol = input.color(defval=color.red, title='', inline='zzcol')
+labelloc = input.string(defval='Left', title='Label Location', options=['Left', 'Right'])
+enable236 = input(defval=true, title='Enable Level 0.236')
+enable382 = input(defval=true, title='Enable Level 0.382')
+enable500 = input(defval=true, title='Enable Level 0.500')
+enable618 = input(defval=true, title='Enable Level 0.618')
+enable786 = input(defval=true, title='Enable Level 0.786')
+
+bool newbar = ta.change(time(tf)) != 0
+
+bi = ta.valuewhen(newbar, bar_index, prd - 1)
+len = bar_index - bi + 1
+
+float ph = na
+float pl = na
+ph := ta.highestbars(high, nz(len, 1)) == 0 ? high : na
+pl := ta.lowestbars(low, nz(len, 1)) == 0 ? low : na
+
+var dir = 0
+iff_1 = pl and na(ph) ? -1 : dir
+dir := ph and na(pl) ? 1 : iff_1
+var max_array_size = 50
+var zigzag = array.new_float(0)
+oldzigzag = array.copy(zigzag)
+
+add_to_zigzag(value, bindex) =>
+    array.unshift(zigzag, bindex)
+    array.unshift(zigzag, value)
+    if array.size(zigzag) > max_array_size
+        array.pop(zigzag)
+        array.pop(zigzag)
+
+update_zigzag(value, bindex) =>
+    if array.size(zigzag) == 0
+        add_to_zigzag(value, bindex)
+    else
+        if dir == 1 and value > array.get(zigzag, 0) or dir == -1 and value < array.get(zigzag, 0)
+            array.set(zigzag, 0, value)
+            array.set(zigzag, 1, bindex)
+        0.
+
+bool dirchanged = dir != dir[1]
+if ph or pl
+    if dirchanged
+        add_to_zigzag(dir == 1 ? ph : pl, bar_index)
+    else
+        update_zigzag(dir == 1 ? ph : pl, bar_index)
+
+if showzigzag and array.size(zigzag) >= 4 and array.size(oldzigzag) >= 4
+    var line zzline = na
+    if array.get(zigzag, 0) != array.get(oldzigzag, 0) or array.get(zigzag, 1) != array.get(oldzigzag, 1)
+        if array.get(zigzag, 2) == array.get(oldzigzag, 2) and array.get(zigzag, 3) == math.round(array.get(oldzigzag, 3))
+            line.delete(zzline)
+        zzline := line.new(x1=math.round(array.get(zigzag, 1)), y1=array.get(zigzag, 0), x2=math.round(array.get(zigzag, 3)), y2=array.get(zigzag, 2), color=dir == 1 ? upcol : dncol, width=2)
+        zzline
+
+if not showzigzag and array.size(zigzag) >= 6
+    var line zzline = na
+    line.delete(zzline)
+    zzline := line.new(x1=math.round(array.get(zigzag, 3)), y1=array.get(zigzag, 2), x2=math.round(array.get(zigzag, 5)), y2=array.get(zigzag, 4), color=dir == 1 ? upcol : dncol, width=2, style=line.style_dotted)
+    zzline
+
+var fibo_ratios = array.new_float(0)
+var fibo_colors = array.new_color(10)
+var shownlevels = 1
+if barstate.isfirst
+    array.push(fibo_ratios, 0.000)
+    if enable236
+        array.push(fibo_ratios, 0.236)
+        shownlevels += 1
+        shownlevels
+    if enable382
+        array.push(fibo_ratios, 0.382)
+        shownlevels += 1
+        shownlevels
+    if enable500
+        array.push(fibo_ratios, 0.500)
+        shownlevels += 1
+        shownlevels
+    if enable618
+        array.push(fibo_ratios, 0.618)
+        shownlevels += 1
+        shownlevels
+    if enable786
+        array.push(fibo_ratios, 0.786)
+        shownlevels += 1
+        shownlevels
+    for x = 1 to 5 by 1
+        array.push(fibo_ratios, x)
+        array.push(fibo_ratios, x + 0.272)
+        array.push(fibo_ratios, x + 0.414)
+        array.push(fibo_ratios, x + 0.618)
+
+    // set colors
+    array.set(fibo_colors, 0, color.lime)
+    array.set(fibo_colors, 1, color.silver)
+    array.set(fibo_colors, 2, color.gray)
+    array.set(fibo_colors, 3, color.red)
+    array.set(fibo_colors, 4, color.purple)
+    array.set(fibo_colors, 5, color.fuchsia)
+    array.set(fibo_colors, 6, color.olive)
+    array.set(fibo_colors, 7, color.navy)
+    array.set(fibo_colors, 8, color.teal)
+    array.set(fibo_colors, 9, color.orange)
+
+var fibolines = array.new_line(0)
+var fibolabels = array.new_label(0)
+if showfibo and array.size(zigzag) >= 6 and barstate.islast
+    if array.size(fibolines) > 0
+        for x = 0 to array.size(fibolines) - 1 by 1
+            line.delete(array.get(fibolines, x))
+            label.delete(array.get(fibolabels, x))
+
+    diff = array.get(zigzag, 4) - array.get(zigzag, 2)
+    stopit = false
+    for x = 0 to array.size(fibo_ratios) - 1 by 1
+        if stopit and x > shownlevels
+            break
+        fibo_line_col = colorfulfibo ? array.get(fibo_colors, timenow / 1000 * x % 10) : fibolinecol
+        array.unshift(fibolines, line.new(x1=math.round(array.get(zigzag, 5)), y1=array.get(zigzag, 2) + diff * array.get(fibo_ratios, x), x2=bar_index, y2=array.get(zigzag, 2) + diff * array.get(fibo_ratios, x), color=fibo_line_col, extend=extend.right))
+        label_x_loc = labelloc == 'Left' ? math.round(array.get(zigzag, 5)) - 1 : bar_index
+        txt = labelloc == 'Left' ? '' : '                  '
+        array.unshift(fibolabels, label.new(x=label_x_loc, y=array.get(zigzag, 2) + diff * array.get(fibo_ratios, x), text=txt + str.tostring(array.get(fibo_ratios, x), '#.###') + '(' + str.tostring(math.round_to_mintick(array.get(zigzag, 2) + diff * array.get(fibo_ratios, x))) + ')', textcolor=labelcol, style=label.style_none))
+        if dir == 1 and array.get(zigzag, 2) + diff * array.get(fibo_ratios, x) > array.get(zigzag, 0) or dir == -1 and array.get(zigzag, 2) + diff * array.get(fibo_ratios, x) < array.get(zigzag, 0)
+            stopit := true
+            stopit
+
+
+//------------------------------------------------------------------------------BUYSELL///////////////////////////////////////////////////////////////////

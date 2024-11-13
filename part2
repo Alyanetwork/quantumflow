@@ -1,0 +1,149 @@
+Başlangıç: Gösterge ve Kullanıcı Girişleri
+pinescript
+Kodu kopyala
+//@version=5
+indicator("Quantum Robot V2 Professional", overlay=true)
+
+// Kullanıcı girişleri
+inputGroup_UIOptions() =>
+    voidLines = input(true, "Void Lines On / Off")
+    dashOn = input(true, "Dashboard On / Off")
+    colorBar = input(true, "Signal Bars On / Off")
+    srLines = input(false, "Support & Resistance Lines On / Off")
+    emaLines = input(false, "EMA (8, 200) On / Off")
+    bsSignals = input(true, "Buy & Sell Signals On / Off")
+    afibOn = input(false, "Fibonacci Retracement On / Off")
+    dashDist = input.int(13, "Dashboard Distance")
+    dashColor = input.color(color.new(#696969, 80), "Dashboard Color", inline="Dash Line")
+    dashTextColor = input.color(color.new(#ffffff, 0), "Text Color", inline="Dash Line")
+    [voidLines, dashOn, colorBar, srLines, emaLines, bsSignals, afibOn, dashDist, dashColor, dashTextColor]
+
+[voidLines, dashOn, colorBar, srLines, emaLines, bsSignals, afibOn, dashDist, dashColor, dashTextColor] = inputGroup_UIOptions()
+2. Göstergeler için Yardımcı Fonksiyonlar
+Bu fonksiyonlar, kod tekrarını azaltarak performansı optimize eder ve ana işlevleri sadeleştirir.
+
+pinescript
+Kodu kopyala
+// Volatilite hesaplama
+calcVolatility(atrLength, stdMultiplier) =>
+    atr = ta.atr(atrLength)
+    smaAtr = ta.sma(atr, 20)
+    stdAtr = stdMultiplier * ta.stdev(atr, 20)
+    topAtrDev = smaAtr + stdAtr
+    bottomAtrDev = smaAtr - stdAtr
+    calcDev = (atr - bottomAtrDev) / (topAtrDev - bottomAtrDev)
+    40 * calcDev + 30  // Volatility yüzdesi
+
+percentVol = calcVolatility(14, 2)
+
+// RSI ve Hacim
+getRSI(length) =>
+    ta.rsi(close, length)
+    
+getVolume() =>
+    volume
+3. Trend Paneli Hesaplamaları
+Trend bilgilerini birden fazla zaman diliminde kontrol eden fonksiyonlar. Bu, kodun daha modüler ve okunabilir hale gelmesini sağlar.
+
+pinescript
+Kodu kopyala
+// Trend Yönünü Hesaplayan Fonksiyon
+trendDirection(src, length) =>
+    ta.sma(src, length)
+
+// Zaman Dilimlerine Göre Trend Durumu
+getTrend(period, smaLength) =>
+    sma = trendDirection(close, smaLength)
+    trendValue = request.security(syminfo.tickerid, period, sma, barmerge.gaps_off, barmerge.lookahead_off)
+    trendValue > trendValue[1] ? "📈" : "📉"
+
+oneMTrend = getTrend("1", 50)
+fiveMTrend = getTrend("5", 50)
+fifteenMTrend = getTrend("15", 50)
+thirtyMTrend = getTrend("30", 50)
+oneHTrend = getTrend("60", 50)
+twoHTrend = getTrend("120", 50)
+fourHTrend = getTrend("240", 50)
+dailyTrend = getTrend("D", 50)
+weeklyTrend = getTrend("W", 50)
+monthlyTrend = getTrend("M", 50)
+4. Dashboard ve Göstergeler
+Gösterge panelini oluşturan fonksiyonlar, performans optimizasyonu amacıyla sadece gerektiğinde güncellenir.
+
+pinescript
+Kodu kopyala
+// Dashboard için etiket
+plotDashboard(dashOn, dashColor, dashTextColor, dashDist, vol, rsi) =>
+    if dashOn
+        label dashboardLabel = label.new(
+            time, close,
+            text="Quantum Panel" + 
+                 "\n━━━━━━━━━━━━━━━━━" +
+                 "\n🎈 Volatility: " + str.tostring(vol, "##.##") + "%" +
+                 "\n🎈 Volume: " + str.tostring(volume, "##.##") + 
+                 "\n🎈 RSI: " + str.tostring(rsi, "##.##") +
+                 "\n🎈 Current Sentiment: " + (close > ta.ema(close, 9) ? "Bullish" : "Bearish") +
+                 "\n━━━━━━━━━━━━━━━━━",
+            color=dashColor, textcolor=dashTextColor, 
+            xloc=xloc.bar_time, 
+            style=label.style_label_left, textalign=text.align_left
+        )
+        label.set_x(dashboardLabel, label.get_x(dashboardLabel) + dashDist)
+        label.delete(dashboardLabel[1])
+
+plotDashboard(dashOn, dashColor, dashTextColor, dashDist, percentVol, getRSI(14))
+5. Destek ve Direnç Çizgileri
+Destek ve direnç çizgileri, if yapısı kullanılarak sadece kullanıcı etkinleştirdiğinde çizilir.
+
+pinescript
+Kodu kopyala
+// Destek ve Direnç Çizgileri
+plotSupportResistance(srLines) =>
+    h10 = ta.highest(10)
+    h50 = ta.highest(50)
+    l10 = ta.lowest(10)
+    l50 = ta.lowest(50)
+    plot(srLines ? h10 : na, color=color.red, linewidth=1)
+    plot(srLines ? h50 : na, color=color.red, linewidth=1)
+    plot(srLines ? l10 : na, color=color.green, linewidth=1)
+    plot(srLines ? l50 : na, color=color.green, linewidth=1)
+
+plotSupportResistance(srLines)
+6. EMA ve Diğer Çizgiler
+EMA çizgileri gibi gösterge çizimleri, kullanıcı girişlerine bağlı olarak etkinleştirilir.
+
+pinescript
+Kodu kopyala
+// EMA Çizgileri
+plotEMA(emaLines) =>
+    ema8 = ta.ema(close, 8)
+    ema200 = ta.ema(close, 200)
+    plot(emaLines ? ema8 : na, color=color.new(color.blue, 0), linewidth=1)
+    plot(emaLines ? ema200 : na, color=color.new(color.red, 0), linewidth=1)
+
+plotEMA(emaLines)
+7. Ek Özellikler – Fibonacci Geri Çekilme Seviyeleri
+Kodun en performans dostu şekilde çalışmasını sağlamak için Fibonacci seviyeleri yalnızca etkinleştirildiğinde çizilir.
+
+pinescript
+Kodu kopyala
+// Fibonacci Geri Çekilme Seviyeleri
+plotFibonacci(afibOn) =>
+    if afibOn
+        fibLevels = array.new_float(6)
+        array.set(fibLevels, 0, 0.236)
+        array.set(fibLevels, 1, 0.382)
+        array.set(fibLevels, 2, 0.5)
+        array.set(fibLevels, 3, 0.618)
+        array.set(fibLevels, 4, 0.786)
+        array.set(fibLevels, 5, 1.0)
+        for i = 0 to array.size(fibLevels) - 1
+            level = close - close * array.get(fibLevels, i)
+            plot(level, color=color.gray, linewidth=1)
+
+plotFibonacci(afibOn)
+Bu yapılandırma ile Quantum Robot V2, Pine Script dilinin en iyi uygulamalarına uygun olarak optimize edilmiştir:
+
+Fonksiyonlar kullanılarak modülerlik sağlandı. Bu, kodun kolayca bakım yapılabilir olmasını sağlar.
+Gereksiz çizim işlemlerinden kaçınıldı ve yalnızca kullanıcı tarafından etkinleştirilen gösterge ve çizgiler çizildi.
+Kullanıcı girişleri bir fonksiyon kullanılarak toplandı, böylece kodun okunabilirliği ve değiştirilebilirliği artırıldı.
